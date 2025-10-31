@@ -1,23 +1,41 @@
-name: Build
+name: SonarCloud Flutter Analysis
+
 on:
   push:
     branches:
       - main
   pull_request:
     types: [opened, synchronize, reopened]
+
 jobs:
-  sonarqube:
-    name: SonarQube
+  sonarcloud:
+    name: SonarCloud
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      # 1️⃣ Récupérer ton code source
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
-      # The analysis requires to retrieve dependencies and build successfully
-      - name: Build
+          fetch-depth: 0  # nécessaire pour SonarCloud
+
+      # 2️⃣ Installer Flutter sur l'environnement GitHub
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.3' # adapte à ta version Flutter
+
+      # 3️⃣ Télécharger les dépendances
+      - name: Flutter pub get
         run: flutter pub get
-      - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v6
+
+      # 4️⃣ (Optionnel) Lancer les tests unitaires
+      - name: Run Flutter tests
+        run: flutter test --machine > tests.output || true
+
+      # 5️⃣ Lancer l'analyse SonarCloud
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # fourni automatiquement
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}    # ton token SonarCloud
